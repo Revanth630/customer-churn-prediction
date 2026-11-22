@@ -55,6 +55,29 @@ def main():
     scored["risk_band"] = pd.cut(proba, [0, 0.3, 0.6, 1], labels=["Low", "Medium", "High"])
     scored.to_csv("churn_scores.csv", index=False)
     print("\nCustomers per risk band:\n", scored.risk_band.value_counts().to_string())
+    plot_drivers(coefs)
+
+
+def plot_drivers(coefs):
+    """Bar chart of the model's coefficients: what pushes churn risk up or down."""
+    import matplotlib.pyplot as plt
+    plt.rcParams.update({"font.size": 9, "svg.fonttype": "none"})
+    labels = (coefs.index.str.replace("num__", "").str.replace("cat__", "")
+              .str.replace("_", " ").str.replace("contract ", "contract: ")
+              .str.replace("payment method ", "pays by "))
+    fig, ax = plt.subplots(figsize=(7, 4), facecolor="#fcfcfb")
+    ax.barh(labels, coefs.values, height=0.6,
+            color=["#eb6834" if v > 0 else "#2a78d6" for v in coefs.values])
+    ax.axvline(0, color="#0b0b0b", lw=0.8)
+    for s in ("top", "right", "left"):
+        ax.spines[s].set_visible(False)
+    ax.tick_params(length=0)
+    ax.set_facecolor("#fcfcfb")
+    ax.set_xlabel("log-odds (orange raises churn risk, blue lowers it)", color="#52514e")
+    ax.set_title("What moves churn risk", loc="left", fontweight="bold")
+    fig.tight_layout()
+    fig.savefig("churn_drivers.svg", facecolor="#fcfcfb")
+    fig.savefig("churn_drivers.png", dpi=110, facecolor="#fcfcfb")
 
 
 if __name__ == "__main__":
