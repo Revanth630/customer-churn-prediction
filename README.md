@@ -1,25 +1,32 @@
-# Customer Churn Prediction
+# Customer churn prediction
 
-An end-to-end churn model written the way a business analyst would approach it: **frame the problem → define requirements → model → turn it into decisions.** It builds on the churn modelling I did at NanoBi Analytics, where proof-of-concept outputs helped win a client. In this version I scoped the business problem, defined the analytical requirements and built the model, and the outputs feed a dashboard so leadership can act on retention signals.
+A logistic regression that scores how likely each customer is to leave and puts them in a low, medium or high risk band. I did churn work like this during my internship at NanoBi Analytics, where it was part of a proof of concept that helped win a client. This is a cleaned-up version on synthetic telecom-style data.
 
-## Business problem
-Retention teams need to know *which* customers are at risk and *why*, so they can act before those customers leave.
+The model matters less than the output. A retention team can't do much with a probability, but they can work through a list of high-risk customers and see why each one is on it.
 
-## Approach
-1. **Data**: a synthetic telecom-style dataset (tenure, charges, contract, support tickets, payment method)
-2. **Pipeline**: `StandardScaler` + `OneHotEncoder` → class-balanced **Logistic Regression** (Scikit-learn)
-3. **Evaluation**: ROC-AUC and a classification report
-4. **Explainability**: the model's coefficients rank the churn drivers
-5. **Output**: `churn_scores.csv` with a Low/Medium/High **risk band** for each customer, ready for a Power BI dashboard
+![What moves churn risk](churn_drivers.svg)
 
-## Run
+## The data
+
+5,000 made-up customers with tenure, monthly charges, support tickets, contract type, payment method and whether they pay by autopay. Churn is generated so it depends on those in a believable way: short contracts and lots of tickets push it up, autopay and long tenure pull it down.
+
+## Results from a run
+
+- ROC-AUC of 0.81 on the 25% held out for testing
+- recall of 0.76 on churners and precision of 0.68. I weighted the classes so the model leans towards catching churners, because for retention a missed churner costs more than one extra call
+- of the 1,250 test customers, 463 land in the high band, 404 in medium and 383 in low
+
+Month-to-month contracts are the biggest single driver, then monthly charges and support tickets. Two-year contracts and longer tenure protect the most.
+
+## Running it
+
 ```bash
 pip install -r requirements.txt
 python churn_model.py
 ```
 
-## Key insights
-- Month-to-month contracts and frequent support tickets are the strongest churn signals
-- Longer tenure and autopay lower churn risk
+It writes `churn_scores.csv`, one row per test customer with their probability and band, plus the chart above. At work a file like this would feed a Power BI page that the retention team filters by band.
 
-> The data is synthetic. It mirrors the churn modelling I've done in industry without exposing any client data.
+## What I'd change with real data
+
+The bands use fixed cut-offs at 0.3 and 0.6. With a real team I'd set them based on how many customers they can actually call in a week. I'd also compare against a tree model, though logistic regression is far easier to explain to a business audience, and that mattered more here.
